@@ -1,0 +1,2 @@
+# mongoscripts
+MongoDB useful scripts
