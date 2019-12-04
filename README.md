@@ -1,5 +1,13 @@
 # MongoDB useful scripts
 
+### RS manual failover reconfig:
+```javascript
+var st = rs.status();
+var cfg = rs.config();
+st.members.forEach(s=>{if(s.health == 0) { for (var i=0;i<cfg.members.length;i++) { if(cfg.members[i]._id==s._id) {cfg.members[i].votes=0;cfg.members[i].priority=0;}}}});
+rs.reconfig(cfg, {force:true});
+```
+
 ### Show full instance index usage statistics:
 ```javascript
 db.adminCommand({listDatabases:1}).databases.forEach(function(dd) {var d = db.getSiblingDB(dd.name); d.getCollectionNames().forEach(function(c) {var res = d.getCollection(c).aggregate([{$indexStats:{}}, {"$project":{name:"$name",ops:"$accesses.ops", since:"$accesses.since"}}]); while(res.hasNext()) {var r=res.next(); print("'"+d+"'.'"+c+"'.'"+r.name+"': ops="+r.ops+", since="+r.since)}})})
