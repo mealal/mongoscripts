@@ -10,7 +10,7 @@ rs.reconfig(cfg, {force:true});
 
 ### Show full instance index usage statistics:
 ```javascript
-db.adminCommand({listDatabases:1}).databases.forEach(function(dd) {var d = db.getSiblingDB(dd.name); d.getCollectionNames().forEach(function(c) {var res = d.getCollection(c).aggregate([{$indexStats:{}}, {"$project":{name:"$name",ops:"$accesses.ops", since:"$accesses.since"}}]); while(res.hasNext()) {var r=res.next(); print("'"+d+"'.'"+c+"'.'"+r.name+"': ops="+r.ops+", since="+r.since)}})})
+db.adminCommand({listDatabases:1}).databases.forEach(function(dd) {if (!Array.contains(["admin","local","config"], dd.name)) { var d = db.getSiblingDB(dd.name); d.getCollectionNames().forEach(function(c) {var res = d.getCollection(c).aggregate([{$indexStats:{}}, {"$project":{name:"$name",ops:"$accesses.ops", since:"$accesses.since"}}]); while(res.hasNext()) {var r=res.next(); if (r.name != "_id_") {print("'"+d+"'.'"+c+"'.'"+r.name+"': ops="+r.ops+", since="+r.since)}}})}})
 ```
 
 ### Random sample data generator
