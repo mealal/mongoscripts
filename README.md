@@ -10,7 +10,7 @@ rs.reconfig(cfg, {force:true});
 
 ### Show full instance index usage statistics:
 ```javascript
-db.adminCommand({listDatabases:1}).databases.forEach(function(dd) {if (!Array.contains(["admin","local","config"], dd.name)) { var d = db.getSiblingDB(dd.name); d.getCollectionInfos().forEach(function(c) {if(c.type == 'collection') {var res = d.getCollection(c.name).aggregate([{$indexStats:{}}, {"$project":{name:"$name",ops:"$accesses.ops", since:"$accesses.since"}}]); while(res.hasNext()) {var r=res.next(); if (r.name != "_id_") {print("'"+d+"'.'"+c.name+"'.'"+r.name+"': ops="+r.ops+", since="+r.since)}}}})}})
+db.adminCommand({listDatabases:1}).databases.forEach(function(dd) {if (!Array.contains(["admin","local","config"], dd.name)) { var d = db.getSiblingDB(dd.name); d.getCollectionInfos().forEach(function(c) {if(c.type == 'collection' && c.name != 'system.views' && c.name != 'system.profile') {var res = d.getCollection(c.name).aggregate([{$indexStats:{}}, {"$project":{name:"$name",ops:"$accesses.ops", since:"$accesses.since"}}]); while(res.hasNext()) {var r=res.next(); if (r.name != "_id_") {print("'"+d+"'.'"+c.name+"'.'"+r.name+"': ops="+r.ops+", since="+r.since)}}}})}})
 ```
 
 ### Random sample data generator
