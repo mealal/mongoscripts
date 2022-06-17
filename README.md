@@ -15,12 +15,12 @@ db.adminCommand({listDatabases:1}).databases.forEach(function(dd) {if (!Array.co
 
 ### Random sample data generator
 ```javascript
-for(var i = 0; i <= 1000; i++) {
+for(var i = 0; i <= 10000; i++) {
     var elemId = Math.ceil(Math.random()*1000)+1;
     for(var j = 0; j <= Math.ceil(Math.random()*1000)+200; j++) {
         var dt = new Date(Date.now() - (Math.ceil(Math.random() * 1000 * 60 * 60 * 24*1000)));
-        var value = (Math.random()+1).toString(36).substring(2);
-        db.test.insertOne({"elemId":elemId, "dt":dt, "value":value})
+        var value = (Buffer.allocUnsafe(100000)).toString();
+        db.mytest.insertOne({"elemId":elemId, "dt":dt, "value":value})
     }
 }
 ```
