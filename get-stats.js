@@ -34,6 +34,41 @@ var formatBytes = function (bytes, decimals = 2) {
   return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`;
 };
 
+var printHeader = function(title) {
+  print("---------------------");
+  print(title);
+  print("---------------------");
+  print(
+    [
+      "Namespace",
+      "Total Documents",
+      "Average Document Size",
+      "Total Documents Size",
+      "Total Storage Size",
+      "Reusable from Collections",
+      "Indexes",
+      "Reusable from Indexes",
+      "Total Orphan Documents",
+    ].join(",")
+  );
+}
+
+var printTotals = function(title, totals) {
+  print(
+    [
+      `${title} Total`,
+      "",
+      "",
+      formatBytes(totals[0]),
+      formatBytes(totals[1]),
+      formatBytes(totals[2]),
+      formatBytes(totals[3]),
+      formatBytes(totals[4]),
+      ""
+    ].join(","), "\n"
+  );
+}
+
 var getData = function (name, stats) {
   var data = {
     name: name,
@@ -120,36 +155,9 @@ db.getMongo()
   .getDBNames()
   .forEach(function (databaseName) {
     if (ignoreList.indexOf(databaseName) < 0) {
-      print("---------------------");
-      print(databaseName);
-      print("---------------------");
-      print(
-        [
-          "Namespace",
-          "Total Documents",
-          "Average Document Size",
-          "Uncompressed",
-          "Compressed",
-          "Reusable from Collections",
-          "Indexes",
-          "Reusable from Indexes",
-          "Orphan Documents",
-        ].join(",")
-      );
+      printHeader(databaseName);
       totals = getDataPerDatabase(databaseName);
-      print(
-        [
-          `Database: ${databaseName} Total`,
-          "",
-          "",
-          formatBytes(totals[0]),
-          formatBytes(totals[1]),
-          formatBytes(totals[2]),
-          formatBytes(totals[3]),
-          formatBytes(totals[4]),
-          ""
-        ].join(",")
-      );
+      printTotals(`Database: ${databaseName}`, totals);
       clusterTotal[0] += totals[0];
       clusterTotal[1] += totals[1];
       clusterTotal[2] += totals[2];
@@ -158,32 +166,5 @@ db.getMongo()
     }
   });
 
-  print("---------------------");
-  print("Cluster Total");
-  print("---------------------");
-print(
-  [
-    "Namespace",
-    "Total Documents",
-    "Average Document Size",
-    "Uncompressed",
-    "Compressed",
-    "Reusable from Collections",
-    "Indexes",
-    "Reusable from Indexes",
-    "Orphan Documents",
-  ].join(",")
-);
-print(
-  [
-    "Total",
-    "",
-    "",
-    formatBytes(clusterTotal[0]),
-    formatBytes(clusterTotal[1]),
-    formatBytes(clusterTotal[2]),
-    formatBytes(clusterTotal[3]),
-    formatBytes(clusterTotal[4]),
-    "",
-  ].join(",")
-);
+printHeader("Cluster Total");
+printTotals("Cluster", clusterTotal);
