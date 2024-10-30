@@ -10,12 +10,11 @@
  */
 
 var getNumber = function (val) {
-  return val ? Long(val).toInt() : 0;
+  return val ? new Number(val) : new Number(0);
 };
 
 var formatBytes = function (bytes, decimals = 2) {
   if (!+bytes) return "0 Bytes";
-
   const k = 1024;
   const dm = decimals < 0 ? 0 : decimals;
   const sizes = [
@@ -47,6 +46,7 @@ var getData = function (name, stats) {
     ),
     indexSpace: getNumber(stats.totalIndexSize),
     indexReusable: 0,
+    orphanDocuments: getNumber(stats.numOrphanDocs)
   };
 
   var keys = Object.keys(stats.indexDetails);
@@ -81,11 +81,11 @@ var getDataPerDatabase = function (databaseName) {
           result.push(getData(stats.ns + " (" + shard + ")", shardStats));
         }
       } else {
-        results.push(getData(stats.ns, stats));
+        result.push(getData(stats.ns, stats));
       }
     });
 
-  var totals = [0, 0, 0, 0, 0];
+  var totals = [Number(0), Number(0), Number(0), Number(0), Number(0)];
 
   for (var r in result) {
     var row = result[r];
@@ -99,6 +99,7 @@ var getDataPerDatabase = function (databaseName) {
         formatBytes(row.reusableSpace),
         formatBytes(row.indexSpace),
         formatBytes(row.indexReusable),
+        row.orphanDocuments
       ].join(",")
     );
 
@@ -113,7 +114,7 @@ var getDataPerDatabase = function (databaseName) {
 
 var ignoreList = ["admin", "local", "config"];
 
-var clusterTotal = [0, 0, 0, 0, 0];
+var clusterTotal = [Number(0), Number(0), Number(0), Number(0), Number(0)];
 
 db.getMongo()
   .getDBNames()
@@ -132,6 +133,7 @@ db.getMongo()
           "Reusable from Collections",
           "Indexes",
           "Reusable from Indexes",
+          "Orphan Documents",
         ].join(",")
       );
       totals = getDataPerDatabase(databaseName);
@@ -145,6 +147,7 @@ db.getMongo()
           formatBytes(totals[2]),
           formatBytes(totals[3]),
           formatBytes(totals[4]),
+          ""
         ].join(",")
       );
       clusterTotal[0] += totals[0];
@@ -168,6 +171,7 @@ print(
     "Reusable from Collections",
     "Indexes",
     "Reusable from Indexes",
+    "Orphan Documents",
   ].join(",")
 );
 print(
@@ -180,5 +184,6 @@ print(
     formatBytes(clusterTotal[2]),
     formatBytes(clusterTotal[3]),
     formatBytes(clusterTotal[4]),
+    "",
   ].join(",")
 );
