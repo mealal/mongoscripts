@@ -35,6 +35,7 @@ var formatBytes = function (bytes, decimals = 2) {
 };
 
 var printHeader = function(title) {
+  print("\n")
   print("---------------------");
   print(title);
   print("---------------------");
@@ -65,13 +66,14 @@ var printTotals = function(title, totals) {
       formatBytes(totals[3]),
       formatBytes(totals[4]),
       ""
-    ].join(","), "\n"
+    ].join(",")
   );
 }
 
-var getData = function (name, stats) {
+var getData = function (name, shard, stats) {
   var data = {
     name: name,
+    shard: shard,
     count: getNumber(stats.count),
     avgSize: getNumber(stats.avgObjSize),
     size: getNumber(stats.size),
@@ -108,19 +110,22 @@ var getDataPerDatabase = function (databaseName) {
         indexDetails: true,
       });
 
-      if (stats.hasOwnProperty("sharded") && stats.sharded) {
+      if (stats.hasOwnProperty("sharded")) {
         var keys = Object.keys(stats.shards);
-        for (var i in keys) {
-          var shard = keys[i];
-          var shardStats = stats.shards[shard];
-          result.push(getData(stats.ns + " (" + shard + ")", shardStats));
+        if (keys.length == 0) {
+          result.push(getData(stats.ns, stats));
+        } else {
+          for (var i in keys) {
+            var shard = keys[i];
+            var shardStats = stats.shards[shard];
+            result.push(getData(stats.ns + " (" + shard + ")", shard, shardStats));
+          }
         }
-      } else {
-        result.push(getData(stats.ns, stats));
       }
     });
 
   var totals = [Number(0), Number(0), Number(0), Number(0), Number(0)];
+  var shards = {}
 
   for (var r in result) {
     var row = result[r];
@@ -143,28 +148,64 @@ var getDataPerDatabase = function (databaseName) {
     totals[2] += row.reusableSpace;
     totals[3] += row.indexSpace;
     totals[4] += row.indexReusable;
+
+    if (shards.hasOwnProperty[row.shard]) {
+      var shardsTotal = shards[row.shard];
+    } else {
+      var shardsTotal = [Number(0), Number(0), Number(0), Number(0), Number(0)];
+    }
+    shardsTotal[0] += row.size;
+    shardsTotal[1] += row.storageSize;
+    shardsTotal[2] += row.reusableSpace;
+    shardsTotal[3] += row.indexSpace;
+    shardsTotal[4] += row.indexReusable;
+
+    shards[row.shard] = shardsTotal;
   }
-  return totals;
+  return {totals: totals, shards: shards};
 };
 
 var ignoreList = ["admin", "local", "config"];
 
 var clusterTotal = [Number(0), Number(0), Number(0), Number(0), Number(0)];
+var shards = {};
 
 db.getMongo()
   .getDBNames()
   .forEach(function (databaseName) {
     if (ignoreList.indexOf(databaseName) < 0) {
       printHeader(databaseName);
-      totals = getDataPerDatabase(databaseName);
-      printTotals(`Database: ${databaseName}`, totals);
-      clusterTotal[0] += totals[0];
-      clusterTotal[1] += totals[1];
-      clusterTotal[2] += totals[2];
-      clusterTotal[3] += totals[3];
-      clusterTotal[4] += totals[4];
+      var result = getDataPerDatabase(databaseName);
+      printTotals(`Database: ${databaseName}`, result.totals);
+      clusterTotal[0] += result.totals[0];
+      clusterTotal[1] += result.totals[1];
+      clusterTotal[2] += result.totals[2];
+      clusterTotal[3] += result.totals[3];
+      clusterTotal[4] += result.totals[4];
+
+      var keys = Object.keys(result.shards);
+      for (i in keys) {
+        var shard = keys[i];
+        if (shards[shard]) {
+          var shardsTotal = shards[shard];
+        } else {
+          var shardsTotal = [Number(0), Number(0), Number(0), Number(0), Number(0)];
+        }
+        shardsTotal[0] += result.shards[shard][0];
+        shardsTotal[1] += result.shards[shard][1];
+        shardsTotal[2] += result.shards[shard][2];
+        shardsTotal[3] += result.shards[shard][3];
+        shardsTotal[4] += result.shards[shard][4];
+
+        shards[shard] = shardsTotal;
+      }
     }
   });
 
 printHeader("Cluster Total");
+var keys = Object.keys(shards);
+for (i in keys) {
+  var shard = keys[i];
+  printTotals(shard, shards[shard]);
+}
 printTotals("Cluster", clusterTotal);
